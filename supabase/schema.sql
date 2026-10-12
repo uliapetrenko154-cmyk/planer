@@ -40,6 +40,12 @@ drop policy if exists "activity select own" on public.activity; create policy "a
 drop policy if exists "activity insert own" on public.activity; create policy "activity insert own" on public.activity for insert with check (auth.uid() = user_id);
 drop policy if exists "activity update own" on public.activity; create policy "activity update own" on public.activity for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+-- 3а. Доступ к таблицам через API для вошедших пользователей (правила RLS выше ограничивают каждого своими строками).
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on public.docs to authenticated;
+grant select, insert, update on public.app_users to authenticated;
+grant select, insert, update on public.activity to authenticated;
+
 -- 4. Статистика для владельца: только счётчики. Доступна одному e-mail (замени при необходимости).
 create or replace function public.admin_stats()
 returns jsonb
@@ -65,10 +71,10 @@ begin
     'quiz_done',   (select count(*) from app_users where quiz_done),
     'by_platform', (select coalesce(jsonb_object_agg(platform, c), '{}'::jsonb)
                       from (select coalesce(platform, 'unknown') platform, count(*) c from app_users group by 1) t),
-    'by_day',      (select coalesce(jsonb_agg(jsonb_build_object('day', d::text, 'active', coalesce(a.c, 0), 'new_users', coalesce(n.c, 0)) order by d), '[]'::jsonb)
-                      from generate_series(current_date - 29, current_date, interval '1 day') d
-                      left join (select day, count(*) c from activity group by day) a on a.day = d::date
-                      left join (select created_at::date day, count(*) c from app_users group by 1) n on n.day = d::date)
+    'by_day',      (select coalesce(jsonb_agg(jsonb_build_object('day', (d::date)::text, 'active', coalesce(a.c, 0), 'new_users', coalesce(n.c, 0)) order by d), '[]'::jsonb)
+                      from generate_series(current_date - 29, current_date, interval '1 day') as d
+                      left join (select activity.day as act_day, count(*) as c from activity group by activity.day) a on a.act_day = d::date
+                      left join (select created_at::date as reg_day, count(*) as c from app_users group by 1) n on n.reg_day = d::date)
   ) into res;
   return res;
 end
