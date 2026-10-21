@@ -7,7 +7,7 @@ alter table public.app_users add column if not exists paid_at timestamptz;
 -- Пользователь не должен менять себе тариф через API: права на столбцы вместо прав на всю таблицу.
 revoke insert, update on public.app_users from authenticated;
 grant insert (user_id, created_at, last_active_at, onboarded, quiz_done, lang, platform) on public.app_users to authenticated;
-grant update (last_active_at, onboarded, quiz_done, lang, platform) on public.app_users to authenticated;
+grant update (user_id, last_active_at, onboarded, quiz_done, lang, platform) on public.app_users to authenticated;
 
 -- 2. Коды доступа (свои промокоды + ключи Gumroad после проверки). Доступ только через функции ниже.
 create table if not exists public.access_codes (
