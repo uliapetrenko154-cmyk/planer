@@ -24,7 +24,7 @@ revoke all on public.access_codes from anon, authenticated;
 create table if not exists public.app_settings (key text primary key, value text);
 alter table public.app_settings enable row level security;
 revoke all on public.app_settings from anon, authenticated;
-insert into public.app_settings(key, value) values ('trial_days', '7') on conflict (key) do nothing;
+insert into public.app_settings(key, value) values ('trial_days', '1') on conflict (key) do nothing;
 insert into public.app_settings(key, value) values ('buy_url', '') on conflict (key) do nothing;
 insert into public.app_settings(key, value) values ('price_text', '') on conflict (key) do nothing;
 insert into public.app_settings(key, value) values ('gumroad_product_id', '') on conflict (key) do nothing;
@@ -47,7 +47,7 @@ begin
     'plan', case when lower(coalesce(auth.jwt() ->> 'email','')) = lower(admin_email) then 'lifetime' else coalesce(r.plan, 'trial') end,
     'paid_at', r.paid_at,
     'created_at', created,
-    'trial_days', coalesce((s ->> 'trial_days')::int, 7),
+    'trial_days', coalesce((s ->> 'trial_days')::int, 1),
     'buy_url', coalesce(s ->> 'buy_url', ''),
     'price_text', coalesce(s ->> 'price_text', ''),
     'gumroad', coalesce(s ->> 'gumroad_product_id', '') <> ''
